@@ -4,5 +4,12 @@
   "main": "index.js",
   "repository": "https://github.com/ernestognw/proposal-autotask-automation.git",
   "author": "ernestognw <ernestognw@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "create:autotask": "node scripts/create-autotask.js"
+  },
+  "dependencies": {
+    "defender-autotask-client": "^1.17.0",
+    "dotenv": "^16.0.0"
+  }
 }
