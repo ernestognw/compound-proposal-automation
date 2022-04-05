@@ -19,10 +19,10 @@ It follows the logic specified below:
 ## How to deploy the Autotask ⚙️
 
 1. Go to `code/index.js` and replace `GovernorBravo.address` if needed
-3. Create an account and sign in to [Open Zeppelin Defender](https://defender.openzeppelin.com/)
-4. Create a Relayer at the `Relay` tab for the same network where the `GovernorBravo` is deployed and fund it with any amount you'd like to provide for the proposals automations
-5. Create a copy of `.env.example` in a `.env` file and fill with your Defender Team API Keys and your relayer id
-6. Execute `yarn create:autotask <proposalId>`
+2. Create an account and sign in to [Open Zeppelin Defender](https://defender.openzeppelin.com/)
+3. Create a Relayer at the `Relay` tab for the same network where the `GovernorBravo` is deployed and fund it with any amount you'd like to provide for the proposals automations
+4. Create a copy of `.env.example` in a `.env` file and fill with your Defender Team API Keys and your relayer id
+5. Execute `yarn create:autotask <proposalId>`. `proposalId` should be in decimal
 
-### Note
+### Notes
 There are no `proposalId` validation, so be careful of providing an invalid `proposalId`

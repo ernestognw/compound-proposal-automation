@@ -3,24 +3,145 @@ const {
   DefenderRelayProvider,
   DefenderRelaySigner,
 } = require("defender-relay-client/lib/ethers");
+const { KeyValueStoreClient } = require("defender-kvstore-client");
 
 const GovernorBravo = {
   address: "0xc0Da02939E1441F497fd74F78cE7Decb17B66529", // Compound governor address (replace if needed)
-  ABI: [],
+  ABI: [
+    {
+      constant: true,
+      inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+      name: "proposals",
+      outputs: [
+        { internalType: "uint256", name: "id", type: "uint256" },
+        { internalType: "address", name: "proposer", type: "address" },
+        { internalType: "uint256", name: "eta", type: "uint256" },
+        { internalType: "uint256", name: "startBlock", type: "uint256" },
+        { internalType: "uint256", name: "endBlock", type: "uint256" },
+        { internalType: "uint256", name: "forVotes", type: "uint256" },
+        { internalType: "uint256", name: "againstVotes", type: "uint256" },
+        { internalType: "uint256", name: "abstainVotes", type: "uint256" },
+        { internalType: "bool", name: "canceled", type: "bool" },
+        { internalType: "bool", name: "executed", type: "bool" },
+      ],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [
+        { internalType: "uint256", name: "proposalId", type: "uint256" },
+      ],
+      name: "state",
+      outputs: [
+        {
+          internalType: "enum GovernorBravoDelegateStorageV1.ProposalState",
+          name: "",
+          type: "uint8",
+        },
+      ],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { internalType: "uint256", name: "proposalId", type: "uint256" },
+      ],
+      name: "queue",
+      outputs: [],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { internalType: "uint256", name: "proposalId", type: "uint256" },
+      ],
+      name: "execute",
+      outputs: [],
+      payable: true,
+      stateMutability: "payable",
+      type: "function",
+    },
+  ],
 };
+
+const ProposalStates = {
+  Pending: 0,
+  Active: 1,
+  Canceled: 2,
+  Defeated: 3,
+  Succeeded: 4,
+  Queued: 5,
+  Expired: 6,
+  Executed: 7,
+};
+
+const QueueTxSentPrefix = "QueueTxSent";
+const ExecuteTxSentPrefix = "ExecuteTxSent";
+
+// Don't update manually, it's automatically updated when creating via API
+const proposalId = "<<PROPOSAL_ID>>";
 
 exports.handler = async function (event) {
   const provider = new DefenderRelayProvider(event);
   const signer = new DefenderRelaySigner(event, provider, { speed: "fastest" });
+  const store = new KeyValueStoreClient(event);
 
-  // TODO: Complete logic
-  // Query the proposal state given the proposal id
-  //   If state is If the proposal is `Succeeded` queue it through a relayer
-  //     Save in the Autotask store a state of `queue-tx-sent` so we don’t resend the tx
-  //   If the proposal `Queued` then query the `eta`
-  //   If `eta` has passed, send a tx to execute
-  //     Save in the Autotask store a `execute-tx-sent` so we don’t resend the tx
-  //   If `eta` hasn’t passed, skip
-  //   If the proposal is `Executed` pause the Autotask
-  //   If the proposal has any other state, skip
+  const GovernorContract = new ethers.Contract(
+    GovernorBravo.address,
+    GovernorBravo.ABI,
+    signer
+  );
+
+  const state = await GovernorContract.state(proposalId);
+
+  switch (state) {
+    case ProposalStates.Succeeded: {
+      const wasPreviouslyQueued = await store.get(
+        `${QueueTxSentPrefix}-${proposalId}`
+      );
+
+      if (!wasPreviouslyQueued) {
+        await GovernorContract.queue(proposalId);
+        await store.put(`${QueueTxSentPrefix}-${proposalId}`, true);
+        return {
+          message: "Queue tx sent",
+        };
+      }
+      break;
+    }
+    case ProposalStates.Queued: {
+      const { eta } = await GovernorContract.proposals(proposalId);
+      const etaDate = new Date(eta.toNumber() * 1000); // Unix timestamp
+      const currentDate = new Date();
+      if (currentDate > etaDate) {
+        // Only execute when `eta` has passed
+        const wasPreviouslyExecuted = await store.get(
+          `${ExecuteTxSentPrefix}-${proposalId}`
+        );
+        if (!wasPreviouslyExecuted) {
+          await GovernorContract.execute(proposalId);
+          await store.put(`${ExecuteTxSentPrefix}-${proposalId}`, true);
+        }
+        return {
+          message: "Execution tx sent",
+        };
+      }
+      break;
+    }
+    case ProposalStates.Executed: {
+      // TODO: Pause Autotask (?)
+      break;
+    }
+    // Default just skip
+  }
+
+  return {
+    message: "Executed with no operation",
+  };
 };

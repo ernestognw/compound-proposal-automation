@@ -9,6 +9,7 @@
     "create:autotask": "node scripts/create-autotask.js"
   },
   "dependencies": {
+    "@ethersproject/bytes": "^5.6.1",
     "defender-autotask-client": "^1.17.0",
     "dotenv": "^16.0.0"
   }
