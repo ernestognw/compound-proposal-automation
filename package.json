@@ -1,0 +1,8 @@
+{
+  "name": "proposal-autotask-automation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/ernestognw/proposal-autotask-automation.git",
+  "author": "ernestognw <ernestognw@gmail.com>",
+  "license": "MIT"
+}
