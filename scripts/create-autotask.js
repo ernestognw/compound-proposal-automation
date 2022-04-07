@@ -3,7 +3,6 @@ const { AutotaskClient } = require("defender-autotask-client");
 const { join } = require("path");
 const { argv } = require("process");
 const { readFileSync, writeFileSync } = require("fs");
-const { hexlify } = require("@ethersproject/bytes");
 
 const [_, __, rawProposalId] = argv;
 const proposalId = Number(rawProposalId);
