@@ -6,7 +6,7 @@ const { readFileSync, writeFileSync } = require("fs");
 const { hexlify } = require("@ethersproject/bytes");
 
 const [_, __, rawProposalId] = argv;
-const proposalId = hexlify(Number(rawProposalId));
+const proposalId = Number(rawProposalId);
 
 const main = async () => {
   if (!proposalId)
