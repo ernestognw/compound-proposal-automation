@@ -98,7 +98,16 @@ exports.handler = async function (event) {
     signer
   );
 
-  const state = await GovernorContract.state(proposalId);
+  //Check proposal state, if proposalId doesn't exist yet, just skip
+  let state;
+  try {
+    state = await GovernorContract.state(proposalId);
+  }
+  catch(err) {
+    return {
+      message: `proposalId: ${proposalId} does not exist`,
+    };
+  }
 
   switch (state) {
     case ProposalStates.Succeeded: {
